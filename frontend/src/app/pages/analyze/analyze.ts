@@ -1,42 +1,56 @@
-import { Component } from '@angular/core';
+import { ChangeDetectorRef, Component } from '@angular/core';
 import { NewsService } from '../../services/news';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
 @Component({
   selector: 'app-analyze',
-  imports: [CommonModule,FormsModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './analyze.html',
   styleUrl: './analyze.css',
 })
 export class Analyze {
-articleText = '';
-prediction = '';
-confidence = 0;
-loading = false ;
+  articleText = '';
+  prediction = '';
+  confidence = 0;
+  loading = false;
 
-constructor(private newsService:NewsService){}
+  constructor(private newsService: NewsService,
+    private cdr: ChangeDetectorRef
+  ) {}
 
-analyzeNews() {
-  if(!this.articleText) return;
-  this.loading = true;
-  this.newsService.analyze(this.articleText).subscribe(
-    (res:any) =>{
+  // Map model labels → human-readable
+  private mapLabel(label: string): string {
+    const map: Record<string, string> = {
+   LABEL_0: 'FAKE',   // jy46604790 model convention
+    LABEL_1: 'REAL',
+   
+    };
+    return map[label?.toUpperCase()] ?? label;
+  }
 
-            // 🔎 LOG FULL RESPONSE FROM BACKEND
-        console.log("Backend Response:", res);
+  get isFake(): boolean {
+    return this.prediction === 'FAKE';
+  }
 
-        // 🔎 Log individual fields
-        console.log("Prediction:", res.prediction);
-        console.log("Confidence:", res.confidence);
-      this.prediction = res.prediction;
+  get confidencePercent(): string {
+    return (this.confidence * 100).toFixed(1) + '%';
+  }
+
+  analyzeNews() {
+    if (!this.articleText.trim()) return;
+    this.loading = true;
+    this.prediction = '';
+
+    this.newsService.analyze(this.articleText).subscribe((res: any) => {
+      console.log('Backend Response:', res);
+      console.log('Prediction:', res.prediction);
+      console.log('Confidence:', res.confidence);
+
+      this.prediction = this.mapLabel(res.prediction);
       this.confidence = res.confidence;
       this.loading = false;
-      // console.log(this.prediction);
-
-
-    }
-  );
-}
-
+       this.cdr.detectChanges();
+    });
+  }
 }

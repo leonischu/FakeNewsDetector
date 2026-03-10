@@ -17,7 +17,7 @@ namespace Backend.Services
 
         public async Task<(string prediction, double confidence)> Predict(string text)
         {
-            var apiUrl = "https://router.huggingface.co/hf-inference/models/mrm8488/bert-tiny-finetuned-fake-news-detection";
+            var apiUrl = "https://router.huggingface.co/hf-inference/models/jy46604790/Fake-News-Bert-Detect";
 
             var token = _config["HuggingFace:Token"];
 
@@ -39,18 +39,23 @@ namespace Backend.Services
 
             //Reading the response
             var json = await response.Content.ReadAsStringAsync();
-
+            Console.WriteLine("RAW RESPONSE: " + json);
 
             if (!response.IsSuccessStatusCode)
                 throw new Exception($"AI API Error: {json}");
 
             var data = JArray.Parse(json);  //This converts JSON into a JArray object.
+            var results = data[0] as JArray;
 
 
             //Extracting the result
+            // Find the label with the HIGHEST score
+            var best = results!
+                .OrderByDescending(x => (double)x["score"]!)
+                .First();
 
-            var label = data[0][0]["label"].ToString();
-            var score = (double)data[0][0]["score"];
+            var label = best["label"]!.ToString();
+            var score = (double)best["score"]!;
 
             return (label, score);
         }

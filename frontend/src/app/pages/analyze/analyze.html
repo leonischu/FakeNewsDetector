@@ -1,41 +1,239 @@
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
 
-<div style="width:700px;margin:auto;margin-top:40px">
+<style>
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes barGrow { from { width: 0%; } }
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 0.3; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.4); }
+  }
+  @keyframes scanline {
+    0%   { transform: translateY(-100%); }
+    100% { transform: translateY(400%); }
+  }
 
-<h2>Fake News Detection</h2>
+  .font-syne { font-family: 'Syne', sans-serif; }
+  .font-mono-dm { font-family: 'DM Mono', monospace; }
+  .font-sans-dm { font-family: 'DM Sans', sans-serif; }
 
-<textarea
-rows="8"
-style="width:100%"
-[(ngModel)]="articleText"
-placeholder="Paste news article here">
-</textarea>
+  .animate-fade-up  { animation: fadeUp 0.45s cubic-bezier(0.16,1,0.3,1) forwards; }
+  .animate-spin-slow { animation: spin 0.75s linear infinite; }
+  .bar-animate { animation: barGrow 0.9s cubic-bezier(0.16,1,0.3,1) forwards; }
 
-<br><br>
+  .scanline::after {
+    content: '';
+    position: absolute;
+    left: 0; right: 0;
+    height: 40%;
+    background: linear-gradient(to bottom, transparent, rgba(255,255,255,0.03), transparent);
+    animation: scanline 2.8s ease-in-out infinite;
+    pointer-events: none;
+  }
 
-<button (click)="analyzeNews()">
-Analyze
-</button>
+  textarea:focus { outline: none; }
+  textarea::placeholder { color: #374151; font-style: italic; }
+  textarea { caret-color: #facc15; }
 
-<br><br>
+  .btn-analyze {
+    background: #f9fafb;
+    color: #09090b;
+    transition: background 0.2s, transform 0.1s;
+    position: relative;
+    overflow: hidden;
+  }
+  .btn-analyze::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: #facc15;
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.3s ease;
+  }
+  .btn-analyze:hover::before { transform: scaleX(1); }
+  .btn-analyze:active { transform: scale(0.99); }
+  .btn-analyze span { position: relative; z-index: 1; }
+  .btn-analyze:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-analyze:disabled::before { display: none; }
 
-<div *ngIf="loading">
-Analyzing news...
-</div>
+  .pulse-dot { animation: pulse-dot 2s ease infinite; }
 
-<div *ngIf="prediction">
+  .grid-bg {
+    background-image:
+      repeating-linear-gradient(0deg, transparent, transparent 39px, rgba(255,255,255,0.018) 39px, rgba(255,255,255,0.018) 40px),
+      repeating-linear-gradient(90deg, transparent, transparent 39px, rgba(255,255,255,0.018) 39px, rgba(255,255,255,0.018) 40px);
+  }
+</style>
 
-<h3>Result</h3>
+<div class="font-sans-dm min-h-screen bg-[#09090b] text-[#e4e4f0] flex justify-center px-5 py-16">
 
-<p>
-Prediction:
-<b>{{prediction}}</b>
-</p>
+  <!-- Background grid -->
+  <div class="fixed inset-0 pointer-events-none grid-bg"></div>
 
-<p>
-Confidence:
-<b>{{confidence | percent}}</b>
-</p>
+  <div class="w-full max-w-[700px] relative z-10">
 
-</div>
+    <!-- HEADER -->
+    <div class="mb-12 pl-5 border-l-4 border-yellow-400">
+      <p class="font-mono-dm text-[10px] tracking-[0.25em] uppercase text-gray-500 mb-2">
+        AI · Media Intelligence
+      </p>
+      <h1 class="font-syne text-5xl font-extrabold leading-none tracking-tight">
+        Fake News<br>
+        <span class="text-yellow-400">Detection</span>
+      </h1>
+      <p class="mt-3 text-sm text-gray-400 font-light">
+        Paste any article below to evaluate its credibility using ML classification.
+      </p>
+    </div>
 
+    <!-- DIVIDER -->
+    <div class="flex items-center gap-3 mb-6">
+      <div class="flex-1 h-px bg-[#1f1f27]"></div>
+      <span class="font-mono-dm text-[10px] tracking-[0.2em] uppercase text-gray-600">Article Input</span>
+      <div class="flex-1 h-px bg-[#1f1f27]"></div>
+    </div>
+
+    <!-- TEXTAREA BLOCK -->
+    <div class="bg-[#111116] border border-[#1f1f27] rounded-sm overflow-hidden focus-within:border-[#3a3a4a] transition-colors duration-200">
+
+      <!-- toolbar -->
+      <div class="flex justify-between items-center px-4 py-2.5 border-b border-[#1f1f27] bg-white/[0.02]">
+        <span class="font-mono-dm text-[10px] tracking-[0.2em] uppercase text-gray-600">Article Text</span>
+        <span class="font-mono-dm text-[10px] text-gray-600">
+          {{ articleText.length | number }} chars
+        </span>
+      </div>
+
+      <textarea
+        rows="8"
+        class="w-full bg-transparent text-[#e4e4f0] text-sm font-light leading-relaxed px-4 py-5 resize-none font-sans-dm"
+        placeholder="Paste the full news article here…"
+        [(ngModel)]="articleText"
+      ></textarea>
+    </div>
+
+    <!-- ANALYZE BUTTON -->
+    <button
+      class="btn-analyze w-full mt-4 py-4 rounded-sm font-mono-dm text-xs font-medium tracking-[0.2em] uppercase"
+      (click)="analyzeNews()"
+      [disabled]="loading"
+    >
+      <span>→ &nbsp; Run Analysis</span>
+    </button>
+
+    <!-- LOADING -->
+    <div *ngIf="loading"
+         class="mt-8 flex items-center gap-4 px-5 py-5 bg-[#111116] border border-[#1f1f27] rounded-sm">
+      <div class="w-5 h-5 border-2 border-[#2a2a35] border-t-yellow-400 rounded-full animate-spin-slow flex-shrink-0"></div>
+      <div>
+        <p class="font-mono-dm text-xs tracking-widest text-gray-400">ANALYZING ARTICLE</p>
+        <p class="font-mono-dm text-[10px] text-gray-600 mt-0.5">Running classification model…</p>
+      </div>
+    </div>
+
+    <!-- RESULT -->
+    <div *ngIf="prediction && !loading" class="mt-8 animate-fade-up rounded-sm overflow-hidden">
+
+      <!-- Result header -->
+      <div
+        [ngClass]="{
+          'bg-emerald-950/40 border-emerald-500': !isFake,
+          'bg-red-950/40   border-red-500':   isFake
+        }"
+        class="border px-5 py-4 flex justify-between items-center relative overflow-hidden scanline"
+      >
+        <div>
+          <p class="font-mono-dm text-[10px] tracking-[0.2em] uppercase mb-1"
+             [ngClass]="{ 'text-emerald-600': !isFake, 'text-red-600': isFake }">
+            Verdict
+          </p>
+          <p class="font-syne text-4xl font-bold"
+             [ngClass]="{ 'text-emerald-400': !isFake, 'text-red-400': isFake }">
+            {{ prediction }}
+          </p>
+        </div>
+
+        <!-- Icon badge -->
+        <div
+          class="w-14 h-14 rounded-full flex items-center justify-center text-2xl font-bold border-2"
+          [ngClass]="{
+            'border-emerald-500 bg-emerald-950/60 text-emerald-400': !isFake,
+            'border-red-500    bg-red-950/60    text-red-400':   isFake
+          }"
+        >
+          <span *ngIf="!isFake">✓</span>
+          <span *ngIf="isFake">✗</span>
+        </div>
+      </div>
+
+      <!-- Result body -->
+      <div
+        class="bg-[#111116] border-x border-b px-5 py-5"
+        [ngClass]="{ 'border-emerald-500/30': !isFake, 'border-red-500/30': isFake }"
+      >
+        <!-- Confidence row -->
+        <div class="flex justify-between items-baseline mb-3">
+          <span class="font-mono-dm text-[10px] tracking-[0.2em] uppercase text-gray-500">
+            Confidence Score
+          </span>
+          <span
+            class="font-mono-dm text-2xl font-medium"
+            [ngClass]="{ 'text-emerald-400': !isFake, 'text-red-400': isFake }"
+          >
+            {{ confidencePercent }}
+          </span>
+        </div>
+
+        <!-- Bar -->
+        <div class="h-1.5 bg-[#1f1f27] rounded-full overflow-hidden">
+          <div
+            class="h-full rounded-full bar-animate"
+            [ngClass]="{ 'bg-emerald-400': !isFake, 'bg-red-400': isFake }"
+            [style.width]="confidencePercent"
+          ></div>
+        </div>
+
+        <!-- Interpretation -->
+        <p class="mt-4 text-xs text-gray-500 font-light leading-relaxed border-t border-[#1f1f27] pt-4">
+          <span *ngIf="!isFake">
+            The model classifies this article as
+            <strong class="text-emerald-400 font-medium">credible</strong>
+            with {{ confidencePercent }} confidence. Content appears consistent with factual reporting.
+          </span>
+          <span *ngIf="isFake">
+            The model flags this article as
+            <strong class="text-red-400 font-medium">potentially misleading</strong>
+            with {{ confidencePercent }} confidence. Cross-check with trusted sources before sharing.
+          </span>
+        </p>
+      </div>
+
+    </div>
+
+    <!-- FOOTER -->
+    <div class="mt-12 pt-5 border-t border-[#1f1f27] flex justify-between items-center">
+      <span class="font-mono-dm text-[10px] text-gray-600">Model · HuggingFace Classifier</span>
+      <div class="flex items-center gap-2">
+        <div
+          class="w-1.5 h-1.5 rounded-full pulse-dot"
+          [ngClass]="{
+            'bg-gray-500':    !prediction && !loading,
+            'bg-yellow-400':  loading,
+            'bg-emerald-400': prediction && !isFake && !loading,
+            'bg-red-400':     prediction && isFake  && !loading
+          }"
+        ></div>
+        <span class="font-mono-dm text-[10px] text-gray-600">
+          <span *ngIf="!prediction && !loading">READY</span>
+          <span *ngIf="loading">PROCESSING</span>
+          <span *ngIf="prediction && !loading">COMPLETE</span>
+        </span>
+      </div>
+    </div>
+
+  </div>
 </div>
