@@ -23,6 +23,7 @@ public class FakeNewsService : IFakeNewsService
     {
         var result = await _ai.Predict(text);
 
+        //Creating the database entity
         var history = new NewsHistory
         {
             ArticleText = text,
@@ -31,7 +32,7 @@ public class FakeNewsService : IFakeNewsService
             Explanation = "Prediction generated using NLP model"
         };
 
-        await _repo.SaveAsync(history);
+        await _repo.SaveAsync(history);  // saves in database 
 
         var response = _mapper.Map<NewsResponseDto>(history);
 

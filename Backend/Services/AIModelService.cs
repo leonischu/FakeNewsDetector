@@ -25,21 +25,29 @@ namespace Backend.Services
 
             request.Headers.Authorization =
                 new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-
+          
+            //This converts your text into JSON.
+            
             request.Content = new StringContent(
                 JsonConvert.SerializeObject(new { inputs = text }),
                 Encoding.UTF8,
                 "application/json"
             );
 
+            //This sends the request to Hugging Face servers.
             var response = await _http.SendAsync(request);
 
+            //Reading the response
             var json = await response.Content.ReadAsStringAsync();
+
 
             if (!response.IsSuccessStatusCode)
                 throw new Exception($"AI API Error: {json}");
 
-            var data = JArray.Parse(json);
+            var data = JArray.Parse(json);  //This converts JSON into a JArray object.
+
+
+            //Extracting the result
 
             var label = data[0][0]["label"].ToString();
             var score = (double)data[0][0]["score"];
