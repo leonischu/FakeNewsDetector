@@ -1,1 +1,41 @@
-<p>analyze works!</p>
+
+<div style="width:700px;margin:auto;margin-top:40px">
+
+<h2>Fake News Detection</h2>
+
+<textarea
+rows="8"
+style="width:100%"
+[(ngModel)]="articleText"
+placeholder="Paste news article here">
+</textarea>
+
+<br><br>
+
+<button (click)="analyzeNews()">
+Analyze
+</button>
+
+<br><br>
+
+<div *ngIf="loading">
+Analyzing news...
+</div>
+
+<div *ngIf="prediction">
+
+<h3>Result</h3>
+
+<p>
+Prediction:
+<b>{{prediction}}</b>
+</p>
+
+<p>
+Confidence:
+<b>{{confidence | percent}}</b>
+</p>
+
+</div>
+
+</div>

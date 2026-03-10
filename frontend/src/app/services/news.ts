@@ -12,6 +12,7 @@ export class NewsService {
   constructor(private http: HttpClient) {}
 
   analyze(text: string): Observable<any> {
+    console.log("Service called with:", text);
     return this.http.post(this.apiUrl, {
       articleText: text
     });
