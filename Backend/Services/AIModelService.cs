@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System.Text;
 
 namespace Backend.Services
@@ -6,27 +7,27 @@ namespace Backend.Services
     public class AIModelService
     {
         private readonly HttpClient _http;
+        private readonly IConfiguration _config;
 
-        public AIModelService(HttpClient http)
+        public AIModelService(HttpClient http, IConfiguration config)
         {
             _http = http;
+            _config = config;
         }
 
         public async Task<(string prediction, double confidence)> Predict(string text)
         {
-            var apiUrl = "https://api-inference.huggingface.co/models/roberta-base-openai-detector";
+            var apiUrl = "https://router.huggingface.co/hf-inference/models/mrm8488/bert-tiny-finetuned-fake-news-detection";
 
-            var requestBody = new
-            {
-                inputs = text
-            };
+            var token = _config["HuggingFace:Token"];
 
             var request = new HttpRequestMessage(HttpMethod.Post, apiUrl);
 
-            request.Headers.Add("Authorization", "Bearer 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");
+            request.Headers.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
 
             request.Content = new StringContent(
-                JsonConvert.SerializeObject(requestBody),
+                JsonConvert.SerializeObject(new { inputs = text }),
                 Encoding.UTF8,
                 "application/json"
             );
@@ -35,16 +36,13 @@ namespace Backend.Services
 
             var json = await response.Content.ReadAsStringAsync();
 
-            // Debug if API fails
             if (!response.IsSuccessStatusCode)
-            {
                 throw new Exception($"AI API Error: {json}");
-            }
 
-            dynamic data = JsonConvert.DeserializeObject(json);
+            var data = JArray.Parse(json);
 
-            string label = data[0].label;
-            double score = data[0].score;
+            var label = data[0][0]["label"].ToString();
+            var score = (double)data[0][0]["score"];
 
             return (label, score);
         }
