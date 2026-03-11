@@ -56,7 +56,7 @@
           2. Backend setup
           bashcd Backend
           dotnet restore
-          Set your HuggingFace token using User Secrets (never hardcode it):
+          Set your HuggingFace token using User Secrets:
           bashdotnet user-secrets init
           dotnet user-secrets set "HuggingFace:Token" "hf_your_token_here"
           Run the backend:
