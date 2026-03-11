@@ -5,14 +5,13 @@
 📸 Screenshots
             
             Home
-              <img width="1900" height="908" alt="image" src="https://github.com/user-attachments/assets/89f53d19-97d2-4556-bf8c-ad14b146efae" />
+![Home Screenshot](https://github.com/user-attachments/assets/89f53d19-97d2-4556-bf8c-ad14b146efae)
 
 
 
           
           Result
-              <img width="1880" height="889" alt="image" src="https://github.com/user-attachments/assets/3d76e2d3-0fdf-4150-8bec-d2bc5fd2aa8a" />
-
+![Result Screenshot](https://github.com/user-attachments/assets/3d76e2d3-0fdf-4150-8bec-d2bc5fd2aa8a)
 
 
 🚀 Tech Stack
